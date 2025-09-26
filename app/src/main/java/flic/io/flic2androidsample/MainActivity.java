@@ -96,6 +96,9 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
                     if (holder.buttonData.button.getConnectionState() == Flic2Button.CONNECTION_STATE_DISCONNECTED) {
+                        // In case Bluetooth permissions were manually allowed in the app's system settings, we are not notified of that.
+                        // Therefore, the foreground service might not run at this point in case the app didn't have permission when the activity was started.
+                        Flic2SampleService.createAndStart(holder.connectBtn.getContext()); // Any context is fine
                         try {
                             holder.buttonData.button.connect();
                             holder.connectBtn.setText("Disconnect");
@@ -205,6 +208,9 @@ public class MainActivity extends AppCompatActivity {
         for (Flic2Button button : Flic2Manager.getInstance().getButtons()) {
             flicRecyclerViewAdapter.addButton(button);
         }
+
+        // Make sure our foreground service runs, if not already started
+        Flic2SampleService.createAndStart(this);
     }
 
     @Override
@@ -262,6 +268,9 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             }
+
+            // If we now got new permissions, we need to start the foreground service
+            Flic2SampleService.createAndStart(this);
 
             ((Button) findViewById(R.id.scanNewButton)).setText("Cancel scan");
             ((TextView) findViewById(R.id.scanWizardStatus)).setText("Press and hold down your Flic2 button until it connects");

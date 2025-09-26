@@ -15,17 +15,17 @@ public class Flic2SampleApplication extends Application {
     public void onCreate() {
         super.onCreate();
 
-        // To prevent the application process from being killed while the app is running in the background, start a Foreground Service
-        ContextCompat.startForegroundService(getApplicationContext(), new Intent(getApplicationContext(), Flic2SampleService.class));
-
         // Initialize the Flic2 manager to run on the same thread as the current thread (the main thread)
         Flic2Manager manager = Flic2Manager.initAndGetInstance(getApplicationContext(), new Handler());
 
-        // Every time the app process starts, connect to all paired buttons and assign a click listener
+        // Every time the app process starts, assign a click listener and connect to all paired buttons
+        for (Flic2Button button : manager.getButtons()) {
+            listenToButtonWithToast(button);
+        }
+
         try {
             for (Flic2Button button : manager.getButtons()) {
                 button.connect();
-                listenToButtonWithToast(button);
             }
         } catch (SecurityException e) {
             // User has revoked the Bluetooth permissions for the app

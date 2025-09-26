@@ -1,11 +1,11 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdk 31
+    compileSdk 36
     defaultConfig {
         applicationId "flic.io.flic2androidsample"
         minSdk 19
-        targetSdk 31
+        targetSdk 36
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -16,6 +16,7 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    namespace "flic.io.flic2androidsample"
 }
 
 dependencies {

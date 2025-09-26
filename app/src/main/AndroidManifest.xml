@@ -3,6 +3,7 @@
     package="flic.io.flic2androidsample">
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
@@ -15,6 +16,7 @@
         android:theme="@style/AppTheme">
         <service
             android:name=".Flic2SampleService"
+            android:foregroundServiceType="connectedDevice"
             android:enabled="true"
             android:exported="false">
         </service>
