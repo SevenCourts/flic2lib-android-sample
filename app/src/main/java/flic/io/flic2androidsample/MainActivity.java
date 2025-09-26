@@ -1,12 +1,11 @@
 package flic.io.flic2androidsample;
 
 import android.Manifest;
-import android.annotation.TargetApi;
+import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -29,8 +28,13 @@ import io.flic.flic2libandroid.Flic2ButtonListener;
 import io.flic.flic2libandroid.Flic2Manager;
 import io.flic.flic2libandroid.Flic2ScanCallback;
 
+@SuppressLint("SetTextI18n")
 public class MainActivity extends AppCompatActivity {
-    private FlicRecyclerViewAdapter flicRecyclerViewAdapter = new FlicRecyclerViewAdapter();
+
+    private static final int REQUEST_BLUETOOTH_PERMISSIONS = 101;
+
+    private final FlicRecyclerViewAdapter flicRecyclerViewAdapter = new FlicRecyclerViewAdapter();
+
     private boolean isScanning;
 
     static class FlicRecyclerViewAdapter extends RecyclerView.Adapter<FlicRecyclerViewAdapter.FlicViewHolder> {
@@ -92,32 +96,24 @@ public class MainActivity extends AppCompatActivity {
             holder.bdaddrTxt.setText(buttonData.button.getBdAddr());
             holder.connectBtn.setText(buttonData.button.getConnectionState() == Flic2Button.CONNECTION_STATE_DISCONNECTED ? "Connect" : "Disconnect");
             holder.circle.getBackground().setColorFilter(new PorterDuffColorFilter(holder.buttonData.getShapeColor(), PorterDuff.Mode.SRC_ATOP));
-            holder.connectBtn.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (holder.buttonData.button.getConnectionState() == Flic2Button.CONNECTION_STATE_DISCONNECTED) {
-                        // In case Bluetooth permissions were manually allowed in the app's system settings, we are not notified of that.
-                        // Therefore, the foreground service might not run at this point in case the app didn't have permission when the activity was started.
-                        Flic2SampleService.createAndStart(holder.connectBtn.getContext()); // Any context is fine
-                        try {
-                            holder.buttonData.button.connect();
-                            holder.connectBtn.setText("Disconnect");
-                        } catch (SecurityException e) {
-                            Toast.makeText(holder.connectBtn.getContext(), "Bluetooth permissions have been revoked. Please re-enable for the app in system settings.", Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        holder.buttonData.button.disconnectOrAbortPendingConnection();
-                        holder.connectBtn.setText("Connect");
+            holder.connectBtn.setOnClickListener(v -> {
+                if (holder.buttonData.button.getConnectionState() == Flic2Button.CONNECTION_STATE_DISCONNECTED) {
+                    // In case Bluetooth permissions were manually allowed in the app's system settings, we are not notified of that.
+                    // Therefore, the foreground service might not run at this point in case the app didn't have permission when the activity was started.
+                    Flic2SampleService.createAndStart(holder.connectBtn.getContext()); // Any context is fine
+                    try {
+                        holder.buttonData.button.connect();
+                        holder.connectBtn.setText("Disconnect");
+                    } catch (SecurityException e) {
+                        Toast.makeText(holder.connectBtn.getContext(), "Bluetooth permissions have been revoked. Please re-enable for the app in system settings.", Toast.LENGTH_SHORT).show();
                     }
-                    holder.circle.getBackground().setColorFilter(new PorterDuffColorFilter(holder.buttonData.getShapeColor(), PorterDuff.Mode.SRC_ATOP));
+                } else {
+                    holder.buttonData.button.disconnectOrAbortPendingConnection();
+                    holder.connectBtn.setText("Connect");
                 }
+                holder.circle.getBackground().setColorFilter(new PorterDuffColorFilter(holder.buttonData.getShapeColor(), PorterDuff.Mode.SRC_ATOP));
             });
-            holder.removeBtn.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Flic2Manager.getInstance().forgetButton(holder.buttonData.button);
-                }
-            });
+            holder.removeBtn.setOnClickListener(v -> Flic2Manager.getInstance().forgetButton(holder.buttonData.button));
         }
 
         @Override
@@ -227,24 +223,17 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == 1) {
-            if (Build.VERSION.SDK_INT < 31 || getApplicationInfo().targetSdkVersion < 31) {
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    scanNewButton(findViewById(R.id.scanNewButton));
-                } else {
-                    Toast.makeText(getApplicationContext(), "Scanning needs Location permission, which you have rejected", Toast.LENGTH_SHORT).show();
-                }
+
+        if (requestCode == REQUEST_BLUETOOTH_PERMISSIONS) {
+            if (grantResults.length >= 2 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
+                scanNewButton(findViewById(R.id.scanNewButton));
             } else {
-                if (grantResults.length >= 2 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
-                    scanNewButton(findViewById(R.id.scanNewButton));
-                } else {
-                    Toast.makeText(getApplicationContext(), "Scanning needs permissions for finding nearby devices, which you have rejected", Toast.LENGTH_SHORT).show();
-                }
+                Toast.makeText(getApplicationContext(), "Scanning needs permissions for finding nearby devices, which you have rejected", Toast.LENGTH_SHORT).show();
             }
         }
     }
 
-    @TargetApi(31)
+
     public void scanNewButton(View v) {
         if (isScanning) {
             Flic2Manager.getInstance().stopScan();
@@ -253,20 +242,11 @@ public class MainActivity extends AppCompatActivity {
             ((Button) findViewById(R.id.scanNewButton)).setText("Scan new button");
             ((TextView) findViewById(R.id.scanWizardStatus)).setText("");
         } else {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (Build.VERSION.SDK_INT < 31 || getApplicationInfo().targetSdkVersion < 31) {
-                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
-                        return;
-                    }
-                } else {
-                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED ||
-                            ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)
-                    {
-                        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT}, 1);
-                        return;
-                    }
-                }
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED ||
+                    ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)
+            {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT}, REQUEST_BLUETOOTH_PERMISSIONS);
+                return;
             }
 
             // If we now got new permissions, we need to start the foreground service
