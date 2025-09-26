@@ -1,11 +1,10 @@
 package flic.io.flic2androidsample;
 
 import android.app.Application;
-import android.content.Intent;
 import android.os.Handler;
+import android.os.Looper;
 import android.widget.Toast;
 
-import androidx.core.content.ContextCompat;
 import io.flic.flic2libandroid.Flic2Button;
 import io.flic.flic2libandroid.Flic2ButtonListener;
 import io.flic.flic2libandroid.Flic2Manager;
@@ -16,7 +15,7 @@ public class Flic2SampleApplication extends Application {
         super.onCreate();
 
         // Initialize the Flic2 manager to run on the same thread as the current thread (the main thread)
-        Flic2Manager manager = Flic2Manager.initAndGetInstance(getApplicationContext(), new Handler());
+        Flic2Manager manager = Flic2Manager.initAndGetInstance(getApplicationContext(), new Handler(Looper.getMainLooper()));
 
         // Every time the app process starts, assign a click listener and connect to all paired buttons
         for (Flic2Button button : manager.getButtons()) {
